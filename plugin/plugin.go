@@ -19,19 +19,21 @@ import (
 var ErrAccessDenied = errors.New("admission: access denied")
 
 // New returns a new admission plugin.
-func New(client *github.Client, org string, team int64) admission.Plugin {
+func New(client *github.Client, org string, orgAdmins bool, team int64) admission.Plugin {
 	return &plugin{
-		client: client,
-		org:    org,
-		team:   team,
+		client:    client,
+		org:       org,
+		orgAdmins: orgAdmins,
+		team:      team,
 	}
 }
 
 type plugin struct {
 	client *github.Client
 
-	org  string // members of this org are granted access
-	team int64  // members of this team are granted admin access
+	org       string // members of this org are granted access
+	orgAdmins bool   // whether to grant org admins admin access to Drone
+	team      int64  // members of this team are granted admin access
 }
 
 func (p *plugin) Admit(ctx context.Context, req *admission.Request) (*drone.User, error) {
@@ -51,7 +53,7 @@ func (p *plugin) Admit(ctx context.Context, req *admission.Request) (*drone.User
 
 	// if the user is an organization administrator
 	// they are granted admin access to the system.
-	if *m.Role == "admin" {
+	if *m.Role == "admin" && p.orgAdmins {
 		logrus.WithField("user", u.Login).
 			WithField("org", p.org).
 			WithField("role", "admin").

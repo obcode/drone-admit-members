@@ -30,10 +30,11 @@ type spec struct {
 	Debug  bool   `envconfig:"DRONE_DEBUG"`
 	Secret string `envconfig:"DRONE_SECRET"`
 
-	Token    string `envconfig:"DRONE_GITHUB_TOKEN"`
-	Endpoint string `envconfig:"DRONE_GITHUB_ENDPOINT" default:"https://api.github.com/"`
-	Org      string `envconfig:"DRONE_GITHUB_ORG"`
-	Team     string `envconfig:"DRONE_GITHUB_TEAM"`
+	Token     string `envconfig:"DRONE_GITHUB_TOKEN"`
+	Endpoint  string `envconfig:"DRONE_GITHUB_ENDPOINT" default:"https://api.github.com/"`
+	Org       string `envconfig:"DRONE_GITHUB_ORG"`
+	OrgAdmins bool   `envconfig:"DRONE_GITHUB_ORG_ADMINS" default:"true"`
+	Team      string `envconfig:"DRONE_GITHUB_TEAM"`
 }
 
 func main() {
@@ -83,6 +84,7 @@ func main() {
 		plugin.New(
 			client,
 			spec.Org,
+			spec.OrgAdmins,
 			team,
 		),
 		spec.Secret,
