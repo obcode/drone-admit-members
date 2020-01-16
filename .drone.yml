@@ -1,10 +1,13 @@
 kind: pipeline
 type: docker
-name: default
+name: build-image
 
 steps:
 - name: build
   image: golang
+  environment:
+    GOOS: linux
+    GOARCH: amd64
   commands:
   - go build
   - go test ./...
