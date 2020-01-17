@@ -34,6 +34,7 @@ type spec struct {
 	Endpoint  string `envconfig:"DRONE_GITHUB_ENDPOINT" default:"https://api.github.com/"`
 	Org       string `envconfig:"DRONE_GITHUB_ORG"`
 	OrgAdmins bool   `envconfig:"DRONE_GITHUB_ORG_ADMINS" default:"true"`
+	OrgEnable bool   `envconfig:"DRONE_GITHUB_ORG_ENABLE" default:"true"`
 	Team      string `envconfig:"DRONE_GITHUB_TEAM"`
 }
 
@@ -85,6 +86,7 @@ func main() {
 			client,
 			spec.Org,
 			spec.OrgAdmins,
+			spec.OrgEnable,
 			team,
 		),
 		spec.Secret,
