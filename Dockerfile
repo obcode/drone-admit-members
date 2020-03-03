@@ -2,7 +2,7 @@ FROM golang:alpine as builder
 RUN apk add -U --no-cache ca-certificates
 RUN go build
 
-FROM alpine:3.6
+FROM alpine
 EXPOSE 3000
 
 ENV GODEBUG netdns=go
