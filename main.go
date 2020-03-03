@@ -8,8 +8,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/drone/drone-admit-members/plugin"
 	"github.com/drone/drone-go/plugin/admission"
+	"github.com/obcode/drone-admit-members/plugin"
 
 	"github.com/google/go-github/v28/github"
 	_ "github.com/joho/godotenv/autoload"
@@ -21,21 +21,15 @@ import (
 // default context
 var nocontext = context.Background()
 
-// default github endpoint
-const endpoint = "https://api.github.com/"
-
 // spec provides the plugin settings.
 type spec struct {
 	Bind   string `envconfig:"DRONE_BIND"`
 	Debug  bool   `envconfig:"DRONE_DEBUG"`
 	Secret string `envconfig:"DRONE_SECRET"`
 
-	Token     string `envconfig:"DRONE_GITHUB_TOKEN"`
-	Endpoint  string `envconfig:"DRONE_GITHUB_ENDPOINT" default:"https://api.github.com/"`
-	Org       string `envconfig:"DRONE_GITHUB_ORG"`
-	OrgAdmins bool   `envconfig:"DRONE_GITHUB_ORG_ADMINS" default:"true"`
-	OrgEnable bool   `envconfig:"DRONE_GITHUB_ORG_ENABLE" default:"true"`
-	Team      string `envconfig:"DRONE_GITHUB_TEAM"`
+	Token    string `envconfig:"DRONE_GITHUB_TOKEN"`
+	Endpoint string `envconfig:"DRONE_GITHUB_ENDPOINT" default:"https://api.github.com/"`
+	Org      string `envconfig:"DRONE_GITHUB_ORG"`
 }
 
 func main() {
@@ -67,27 +61,10 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	// we need to lookup the github team name
-	// to gets its unique system identifier
-	var team int64
-	if spec.Team != "" {
-		result, _, err := client.Teams.GetTeamBySlug(nocontext, spec.Org, spec.Team)
-		if err != nil {
-			logrus.WithError(err).
-				WithField("org", spec.Org).
-				WithField("team", spec.Team).
-				Fatalln("cannot find team")
-		}
-		team = result.GetID()
-	}
-
 	handler := admission.Handler(
 		plugin.New(
 			client,
 			spec.Org,
-			spec.OrgAdmins,
-			spec.OrgEnable,
-			team,
 		),
 		spec.Secret,
 		logrus.StandardLogger(),

