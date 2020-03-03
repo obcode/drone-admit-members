@@ -2,7 +2,7 @@ FROM golang:alpine as builder
 RUN apk add -U --no-cache ca-certificates
 WORKDIR /go/src/github.com/obcode/drone-admit-members
 COPY . .
-RUN go build && ls
+RUN go build
 
 FROM alpine
 EXPOSE 3000
