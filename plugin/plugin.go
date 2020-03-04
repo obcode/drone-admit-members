@@ -20,16 +20,18 @@ import (
 var ErrAccessDenied = errors.New("admission: access denied")
 
 // New returns a new admission plugin.
-func New(client *github.Client, org string) admission.Plugin {
+func New(client *github.Client, orgs string, admins string) admission.Plugin {
 	return &plugin{
 		client: client,
-		org:    org,
+		orgs:   orgs,
+		admins: admins,
 	}
 }
 
 type plugin struct {
 	client *github.Client
-	org    string // members of this org are granted access
+	orgs   string // members of this orgs are granted access
+	admins string
 }
 
 func (p *plugin) Admit(ctx context.Context, req *admission.Request) (*drone.User, error) {
@@ -39,22 +41,29 @@ func (p *plugin) Admit(ctx context.Context, req *admission.Request) (*drone.User
 		Debugln("requesting system access")
 
 	// check organization membership
-	orgs := strings.Split(p.org, ",")
+	orgs := strings.Split(p.orgs, ",")
+	admins := strings.Split(p.admins, ",")
 
 	for _, org := range orgs {
 		_, _, err := p.client.Organizations.GetOrgMembership(ctx, u.Login, org)
 		if err == nil {
-			if u.Login == "obcode" {
-				logrus.WithField("user", u.Login).
-					WithField("org", p.org).
-					WithField("role", "admin").
-					Debugln("granted admin system access")
-				u.Admin = true
-				return &u, err
+			for _, admin := range admins {
+				if u.Login == admin {
+					logrus.WithField("user", u.Login).
+						WithField("org", org).
+						WithField("role", "admin").
+						Debugln("granted admin system access")
+
+					u.Admin = true
+
+					return &u, err
+				}
 			}
+
 			logrus.WithField("user", u.Login).
-				WithField("org", p.org).
+				WithField("org", orgs).
 				Debugln("granted standard system access")
+
 			return nil, err
 		}
 	}
