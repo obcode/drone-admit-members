@@ -39,6 +39,7 @@ func main() {
 	}
 
 	if spec.Debug {
+
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 

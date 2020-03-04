@@ -10,3 +10,10 @@ steps:
     image: golangci/golangci-lint
     commands:
       - golangci-lint run
+  - name: notify
+    image: drillster/drone-email
+    host: mailrelay
+    skip_verify: true
+    from: ob@cs.hm.edu
+    when:
+      status: [changed, failure]
