@@ -44,6 +44,7 @@ func main() {
 	}
 
 	if spec.Secret == "" {
+
 		logrus.Fatalln("missing secret key")
 	}
 
