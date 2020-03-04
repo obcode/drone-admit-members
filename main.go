@@ -39,12 +39,10 @@ func main() {
 	}
 
 	if spec.Debug {
-
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	if spec.Secret == "" {
-
 		logrus.Fatalln("missing secret key")
 	}
 
